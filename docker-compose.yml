@@ -1,0 +1,26 @@
+services:
+  mlflow:
+    build: .
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////data/mlflow.db --default-artifact-root /data/mlartifacts
+    ports: ["5000:5000"]
+    volumes: ["mlflowops-data:/data"]
+  api:
+    build: .
+    env_file: .env
+    environment:
+      MLFLOWOPS_HOME: /data
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    ports: ["8000:8000"]
+    volumes: ["mlflowops-data:/data"]
+    depends_on: [mlflow]
+  dashboard:
+    build: .
+    command: streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    env_file: .env
+    environment:
+      API_URL: http://api:8000
+      MLFLOW_UI_URL: http://localhost:5000
+    ports: ["8501:8501"]
+    depends_on: [api]
+volumes:
+  mlflowops-data:
